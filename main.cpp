@@ -9,6 +9,8 @@ void printAllProductsAllBuyOptions(vector< vector< vector< int > > > all_product
 void printProductAllBuyOption(vector< vector< int > > product_buy_options);
 void printProductBuyOption(vector< int > buy_option);
 
+void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options);
+
 int main()
 {
     // START Vector with all the buy options indexed by product
@@ -47,6 +49,9 @@ int main()
     // END Vector with all the buy options indexed by product
 
     printAllProductsAllBuyOptions(all_products_buy_options);
+
+    vector< vector< int > > best_buy_options;
+    getBestBuyOptions(all_products_buy_options, &best_buy_options);
     return 0;
 }
 
@@ -67,4 +72,8 @@ void printProductBuyOption(vector< int > buy_option)
     cout << "\tproduct_id: " << buy_option[0] << endl;
     cout << "\tstore_id: " << buy_option[1] << endl;
     cout << "\tprice: " << buy_option[2] << endl;
+}
+
+void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options)
+{
 }
