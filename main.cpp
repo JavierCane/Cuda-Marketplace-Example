@@ -5,9 +5,9 @@
 using namespace std;
 
 
-void print_all_products_buy_options(vector< vector< vector< int > > > all_products_buy_options);
-void print_product_buy_options(vector< vector< int > > product_buy_options);
-void print_buy_option(vector< int > buy_option);
+void printAllProductsAllBuyOptions(vector< vector< vector< int > > > all_products_buy_options);
+void printProductAllBuyOption(vector< vector< int > > product_buy_options);
+void printProductBuyOption(vector< int > buy_option);
 
 int main()
 {
@@ -46,21 +46,22 @@ int main()
     all_products_buy_options.push_back(product_2_buy_options);
     // END Vector with all the buy options indexed by product
 
-    print_all_products_buy_options(all_products_buy_options);
+    printAllProductsAllBuyOptions(all_products_buy_options);
     return 0;
 }
 
-void print_all_products_buy_options(vector< vector< vector< int > > > all_products_buy_options)
+void printAllProductsAllBuyOptions(vector< vector< vector< int > > > all_products_buy_options)
 {
-    for_each(all_products_buy_options.begin(), all_products_buy_options.end(), print_product_buy_options);
+    cout << "All products buy options:" << endl;
+    for_each(all_products_buy_options.begin(), all_products_buy_options.end(), printProductAllBuyOption);
 }
 
-void print_product_buy_options(vector< vector< int > > product_buy_options)
+void printProductAllBuyOption(vector< vector< int > > product_buy_options)
 {
-    for_each(product_buy_options.begin(), product_buy_options.end(), print_buy_option);
+    for_each(product_buy_options.begin(), product_buy_options.end(), printProductBuyOption);
 }
 
-void print_buy_option(vector< int > buy_option)
+void printProductBuyOption(vector< int > buy_option)
 {
     cout << "Buy option:" << endl;
     cout << "\tproduct_id: " << buy_option[0] << endl;
