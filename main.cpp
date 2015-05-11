@@ -10,6 +10,8 @@ void printProductAllBuyOption(vector< vector< int > > product_buy_options);
 void printProductBuyOption(vector< int > buy_option);
 
 void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options);
+void getProductBestBuyOption(vector< vector< int > > product_buy_options, vector< int > *best_buy_option);
+void printBestBuyOption(vector< vector< int > > best_buy_options);
 
 int main()
 {
@@ -52,6 +54,8 @@ int main()
 
     vector< vector< int > > best_buy_options;
     getBestBuyOptions(all_products_buy_options, &best_buy_options);
+    cout << endl <<"Best products buy options:" << endl;
+    printProductAllBuyOption(best_buy_options);
     return 0;
 }
 
@@ -76,4 +80,12 @@ void printProductBuyOption(vector< int > buy_option)
 
 void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options)
 {
+     for(int i = 0; i < all_products_buy_options.size(); ++i){
+             vector<int> actual_best_buy_option = all_products_buy_options[i][0];
+             for(int j = 1; j < all_products_buy_options[i].size(); ++j){
+                     if (all_products_buy_options[i][j][2] < actual_best_buy_option[2])
+                           actual_best_buy_option = all_products_buy_options[i][j];
+             }
+             (*best_buy_options).push_back(actual_best_buy_option);
+     }
 }
