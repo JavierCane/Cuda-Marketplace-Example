@@ -4,6 +4,9 @@
 
 using namespace std;
 
+#define PRODUCT_ID_POS 0
+#define STORE_ID_POS 1
+#define PRICE_POS 2
 
 void printAllProductsAllBuyOptions(vector< vector< vector< int > > > all_products_buy_options);
 void printProductAllBuyOption(vector< vector< int > > product_buy_options);
@@ -80,15 +83,24 @@ void printProductBuyOption(vector< int > buy_option)
 
 void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options)
 {
-    for(int i = 0; i < all_products_buy_options.size(); ++i) {
-        vector<int> actual_best_buy_option = all_products_buy_options[i][0];
+    int num_products = all_products_buy_options.size();
 
-        for(int j = 1; j < all_products_buy_options[i].size(); ++j) {
-            if (all_products_buy_options[i][j][2] < actual_best_buy_option[2]) {
-                actual_best_buy_option = all_products_buy_options[i][j];
+    for(int current_product_iteration = 0; current_product_iteration < num_products; ++current_product_iteration) {
+
+        // Initialize the tmp_best_buy_option with the first buy option
+        vector<int> tmp_best_buy_option = all_products_buy_options[current_product_iteration][0];
+
+        int num_product_buy_options = all_products_buy_options[current_product_iteration].size();
+
+        for(int buy_option_iteration = 1; buy_option_iteration < num_product_buy_options; ++buy_option_iteration) {
+
+            int current_product_price = all_products_buy_options[current_product_iteration][buy_option_iteration][PRICE_POS];
+
+            if (current_product_price < tmp_best_buy_option[PRICE_POS]) {
+                tmp_best_buy_option = all_products_buy_options[current_product_iteration][buy_option_iteration];
             }
         }
 
-        (*best_buy_options).push_back(actual_best_buy_option);
+        (*best_buy_options).push_back(tmp_best_buy_option);
     }
 }
