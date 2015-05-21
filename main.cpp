@@ -34,8 +34,14 @@ int main()
     product_1_store_2_buy_option.push_back(2); // store_id
     product_1_store_2_buy_option.push_back(12); // price
 
+    vector<int> product_1_store_3_buy_option;
+    product_1_store_3_buy_option.push_back(1); // product_id
+    product_1_store_3_buy_option.push_back(3); // store_id
+    product_1_store_3_buy_option.push_back(9); // price
+
     product_1_buy_options.push_back(product_1_store_1_buy_option);
     product_1_buy_options.push_back(product_1_store_2_buy_option);
+    product_1_buy_options.push_back(product_1_store_3_buy_option);
     // END Vector all the buy options for the product 1
 
     // START Vector all the buy options for the product 2
