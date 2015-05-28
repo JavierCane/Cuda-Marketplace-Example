@@ -36,40 +36,39 @@ int main(int argc, char** argv)
 
 void initAllProductsBuyOptions(int *all_products_buy_options)
 {
-    // START Vector all the buy options for the product 1
+    for(int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
+    {
+        int current_product_position = product_iteration * NUM_BUY_OPTIONS;
 
-    // product_1_store_1_buy_option;
-    all_products_buy_options[0] = 11; // store_id
-    all_products_buy_options[1] = 11;  // price
+        for(int buy_option_iteration = 0; buy_option_iteration < NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION; buy_option_iteration += ELEMENTS_PER_BUY_OPTION)
+        {
+            int current_product_store_position = current_product_position + buy_option_iteration * ELEMENTS_PER_BUY_OPTION + STORE_ID_OFFSET;
+            int current_product_price_position = current_product_position + buy_option_iteration * ELEMENTS_PER_BUY_OPTION + PRICE_OFFSET;
 
-    // product_1_store_2_buy_option;
-    all_products_buy_options[2] = 12; // store_id
-    all_products_buy_options[3] = 12;  // price
+            cout << "product_iteration: " << product_iteration << endl;
+            cout << "buy_option_iteration: " << buy_option_iteration << endl;
+            cout << "current_product_position: " << current_product_position << endl;
+            cout << "current_product_store_position: " << current_product_store_position << endl;
+            cout << "current_product_price_position: " << current_product_price_position << endl;
+            cout << "NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION: " << NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION << endl << endl;
 
-    // END Vector all the buy options for the product 1
+            // Set the current product buy option to the store with the same id as the current iteration in order to do not duplicate buy options.
+            all_products_buy_options[current_product_store_position] = buy_option_iteration;
 
-    // START Vector all the buy options for the product 2
-
-    // product_1_store_1_buy_option;
-    all_products_buy_options[4] = 21; // store_id
-    all_products_buy_options[5] = 21;  // price
-
-    // product_1_store_2_buy_option;
-    all_products_buy_options[6] = 22; // store_id
-    all_products_buy_options[7] = 2;  // price
-
-    // END Vector all the buy options for the product 2
+            // Set the price with a random value between 0 and 100.
+            all_products_buy_options[current_product_price_position] = rand() % 100;
+        }
+    }
 }
 
 void printAllProductsAllBuyOptions(int *all_products_buy_options)
 {
-    cout << "All products buy options:" << endl;
+    cout << "*** All products buy options ***" << endl;
     for (int i = 0; i < NUM_PRODUCTS; ++i){
-        cout << endl << "\tproduct_id: " << i << endl;
+        cout << endl << "Buy options for product_id: " << i << endl;
         for (int j = 0; j < NUM_BUY_OPTIONS*2; j += 2){
-            cout << "Buy option:" << endl;
             cout << "\tstore_id: " << all_products_buy_options[i*NUM_BUY_OPTIONS*2+j] << endl;
-            cout << "\tprice: " << all_products_buy_options[i*NUM_BUY_OPTIONS*2+j+1] << endl;
+            cout << "\tprice: " << all_products_buy_options[i*NUM_BUY_OPTIONS*2+j+1] << endl << endl;
         }
     }
 }
@@ -100,11 +99,11 @@ void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options)
 
 void printBestBuyOptions(int *best_buy_options)
 {
-    cout << endl <<"Best products buy options:" << endl;
+    cout << endl <<"*** Best products buy options ***" << endl << endl;
     for (int i = 0; i < NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION; i += ELEMENTS_PER_BUY_OPTION)
     {
         cout << "Best buy option for product_id: " << i / ELEMENTS_PER_BUY_OPTION << endl;
         cout << "\tstore_id: " << best_buy_options[i + STORE_ID_OFFSET] << endl;
-        cout << "\tprice: " << best_buy_options[i + PRICE_OFFSET] << endl;
+        cout << "\tprice: " << best_buy_options[i + PRICE_OFFSET] << endl << endl;
     }
 }
