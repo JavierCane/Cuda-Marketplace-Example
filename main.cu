@@ -1,3 +1,4 @@
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -12,11 +13,12 @@ using namespace std;
 
 #define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
 
+void initAllProductsBuyOptions(int *all_products_buy_options);
+
 void printAllProductsAllBuyOptions(int *all_products_buy_options);
 void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options);
 void printBestBuyOptions(int *best_buy_options);
 
-void initAllProductsBuyOptions(int *all_products_buy_options);
 bool areResultsValid(int *all_products_buy_options, int *best_buy_options);
 
 // ToDo: Cada thread ejecuta el kernel.
@@ -111,8 +113,8 @@ int main(int argc, char** argv)
     cudaEventDestroy(stop);
 
     // DEBUG
-    printAllProductsAllBuyOptions(all_products_buy_options);
-    getBestBuyOptions(all_products_buy_options, best_buy_options);
+    printAllProductsAllBuyOptions(host_all_products_buy_options);
+    getBestBuyOptions(host_all_products_buy_options, best_buy_options);
     printBestBuyOptions(best_buy_options);
     // END DEBUG
 
@@ -220,12 +222,10 @@ void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options)
 void printBestBuyOptions(int *best_buy_options)
 {
     cout << endl <<"Best products buy options:" << endl;
-    for (int i = 0; i < NUM_PRODUCTS*2; i+=2)
+    for (int i = 0; i < NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION; i += ELEMENTS_PER_BUY_OPTION)
     {
-        cout << endl << "\tproduct_id: " << i/2 << endl;
-        cout << "Buy option:" << endl;
-        cout << "\tstore_id: " << best_buy_options[i] << endl;
-        cout << "\tprice: " << best_buy_options[i+1] << endl;
+        cout << "Best buy option for product_id: " << i / ELEMENTS_PER_BUY_OPTION << endl;
+        cout << "\tstore_id: " << best_buy_options[i + STORE_ID_OFFSET] << endl;
+        cout << "\tprice: " << best_buy_options[i + PRICE_OFFSET] << endl;
     }
 }
-
