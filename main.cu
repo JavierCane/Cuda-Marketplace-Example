@@ -12,8 +12,9 @@ using namespace std;
 
 #define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
 
-void printBestBuyOptions(int *best_buy_options);
+void printAllProductsAllBuyOptions(int *all_products_buy_options);
 void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options);
+void printBestBuyOptions(int *best_buy_options);
 
 void initAllProductsBuyOptions(int *all_products_buy_options);
 bool areResultsValid(int *all_products_buy_options, int *best_buy_options);
@@ -109,6 +110,12 @@ int main(int argc, char** argv)
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
+    // DEBUG
+    printAllProductsAllBuyOptions(all_products_buy_options);
+    getBestBuyOptions(all_products_buy_options, best_buy_options);
+    printBestBuyOptions(best_buy_options);
+    // END DEBUG
+
     if ( areResultsValid( host_all_products_buy_options, best_buy_options ) )
     {
         printf ("TEST PASS\n");
@@ -171,6 +178,19 @@ bool areResultsValid(int *all_products_buy_options, int *best_buy_options)
    }
 
    return true;
+}
+
+void printAllProductsAllBuyOptions(int *all_products_buy_options)
+{
+    cout << "All products buy options:" << endl;
+    for (int i = 0; i < NUM_PRODUCTS; ++i){
+        cout << endl << "\tproduct_id: " << i << endl;
+        for (int j = 0; j < NUM_BUY_OPTIONS*2; j += 2){
+            cout << "Buy option:" << endl;
+            cout << "\tstore_id: " << all_products_buy_options[i*NUM_BUY_OPTIONS*2+j] << endl;
+            cout << "\tprice: " << all_products_buy_options[i*NUM_BUY_OPTIONS*2+j+1] << endl;
+        }
+    }
 }
 
 void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options)
