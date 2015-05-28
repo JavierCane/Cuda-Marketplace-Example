@@ -3,26 +3,20 @@
 
 using namespace std;
 
-#define PRODUCT_ID_POS 0
-#define STORE_ID_POS 1
-#define PRICE_POS 2
+#define ELEMENTS_PER_BUY_OPTION 2
+#define STORE_ID_OFFSET 0
+#define PRICE_OFFSET 1
 
 #define NUM_PRODUCTS 3
 #define NUM_BUY_OPTIONS 6144
-#define ELEMENTS_PER_BUY_OPTION 2
 
 #define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
 
-void printAllProductsAllBuyOptions(vector< vector< vector< int > > > all_products_buy_options);
-void printProductAllBuyOption(vector< vector< int > > product_buy_options);
-void printProductBuyOption(vector< int > buy_option);
+void printBestBuyOptions(int *best_buy_options);
+void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options);
 
-void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options);
-void getProductBestBuyOption(vector< vector< int > > product_buy_options, vector< int > *best_buy_option);
-void printBestBuyOption(vector< vector< int > > best_buy_options);
-
-void initTotalBuyOptions(int num_total_buy_options, int *all_products_buy_options);
-int checkResults(int num_total_buy_options, int *all_products_buy_options, int *host_best_buy_options);
+void initAllProductsBuyOptions(int *all_products_buy_options);
+bool areResultsValid(int *all_products_buy_options, int *best_buy_options);
 
 // ToDo: Cada thread ejecuta el kernel.
 // Identificar el thread en el que estamos, en base a esto, calculamos si nos toca trabajar y, en caso afirmativo
@@ -59,150 +53,159 @@ __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *be
 
 int main(int argc, char** argv)
 {
-    // START Vector with all the buy options indexed by product
-    vector< vector< vector< int > > > all_products_buy_options;
+    // Buy options in host and device
+    int *host_all_products_buy_options = (int *) malloc( NUM_PRODUCTS * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION * sizeof(int) );
+    int *best_buy_options = (int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(int) );
+    unsigned int *device_all_products_buy_options;
+    unsigned int *device_best_buy_options;
 
-    // START Vector all the buy options for the product 1
-    vector< vector<int> > product_1_buy_options;
-
-    vector<int> product_1_store_1_buy_option;
-    product_1_store_1_buy_option.push_back(1); // product_id
-    product_1_store_1_buy_option.push_back(1); // store_id
-    product_1_store_1_buy_option.push_back(11); // price
-
-    vector<int> product_1_store_2_buy_option;
-    product_1_store_2_buy_option.push_back(1); // product_id
-    product_1_store_2_buy_option.push_back(2); // store_id
-    product_1_store_2_buy_option.push_back(12); // price
-
-    vector<int> product_1_store_3_buy_option;
-    product_1_store_3_buy_option.push_back(1); // product_id
-    product_1_store_3_buy_option.push_back(3); // store_id
-    product_1_store_3_buy_option.push_back(9); // price
-
-    product_1_buy_options.push_back(product_1_store_1_buy_option);
-    product_1_buy_options.push_back(product_1_store_2_buy_option);
-    product_1_buy_options.push_back(product_1_store_3_buy_option);
-    // END Vector all the buy options for the product 1
-
-    // START Vector all the buy options for the product 2
-    vector< vector<int> > product_2_buy_options;
-
-    vector<int> product_2_store_1_buy_option;
-    product_2_store_1_buy_option.push_back(2); // product_id
-    product_2_store_1_buy_option.push_back(1); // store_id
-    product_2_store_1_buy_option.push_back(21); // price
-
-    product_2_buy_options.push_back(product_2_store_1_buy_option);
-    // END Vector all the buy options for the product 2
-
-    all_products_buy_options.push_back(product_1_buy_options);
-    all_products_buy_options.push_back(product_2_buy_options);
-    // END Vector with all the buy options indexed by product
-
-    // START Cuda init
-    unsigned int num_total_buy_options;
-    unsigned int total_buy_options_size, best_buy_options_size;
-    unsigned int NUM_PRODUCTS, nThreads;
-
-    float elapsedTime;
-    cudaEvent_t start, stop;
-
-    unsigned int *host_total_buy_options, *host_best_buy_options;
-    unsigned int *device_total_buy_options, *device_best_buy_options;
+    // Metadata
     unsigned int buy_option_size = ELEMENTS_PER_BUY_OPTION * sizeof(int);
+    unsigned int num_total_buy_options = NUM_PRODUCTS * NUM_BUY_OPTIONS;
+    unsigned int total_buy_options_size = num_total_buy_options * buy_option_size;
+    unsigned int best_buy_options_size = NUM_PRODUCTS * buy_option_size;
 
-    num_total_buy_options = NUM_PRODUCTS * NUM_BUY_OPTIONS;
+    // Benchmarking
+    float elapsed_time;
+    cudaEvent_t start;
+    cudaEvent_t stop;
 
-    total_buy_options_size = num_total_buy_options * buy_option_size;
-    best_buy_options_size = NUM_PRODUCTS * buy_option_size;
+    initAllProductsBuyOptions(host_all_products_buy_options);
 
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
 
-    // Obtener Memoria en el host
-    host_total_buy_options = (int*) malloc(total_buy_options_size);
-    host_best_buy_options = (int*) malloc(best_buy_options_size);
-
-    // Obtiene Memoria [pinned] en el host
-    //cudaMallocHost((float**)&h_v, numBytesV);
-    //cudaMallocHost((float**)&h_w, numBytesW);
-
-    // Inicializa los vectores
-    InitV(num_total_buy_options, host_total_buy_options);
-
     // Obtener Memoria en el device
-    cudaMalloc((float**)&device_total_buy_options, total_buy_options_size);
-    cudaMalloc((float**)&device_best_buy_options, best_buy_options_size);
+    cudaMalloc( (float**) &device_all_products_buy_options, total_buy_options_size );
+    cudaMalloc( (float**) &device_best_buy_options, best_buy_options_size );
 
     // Copiar datos desde el host en el device
-    cudaMemcpy(device_total_buy_options, host_total_buy_options, total_buy_options_size, cudaMemcpyHostToDevice);
+    cudaMemcpy(device_all_products_buy_options, host_all_products_buy_options, total_buy_options_size, cudaMemcpyHostToDevice);
 
     cudaEventRecord(start, 0);
 
     // Ejecutar el kernel (número de bloques = número de productos)
-    KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_total_buy_options, device_best_buy_options, total_buy_options_size);
+    KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options, total_buy_options_size);
 
-    // Obtener el resultado parcialdesde el host
-    cudaMemcpy(host_best_buy_options, device_best_buy_options, best_buy_options_size, cudaMemcpyDeviceToHost);
+    // Obtener el resultado parcial desde el host
+    cudaMemcpy(best_buy_options, device_best_buy_options, best_buy_options_size, cudaMemcpyDeviceToHost);
 
     cudaEventRecord(stop, 0);
     cudaEventSynchronize(stop);
 
     // Liberar Memoria del device
-    cudaFree(device_total_buy_options);
+    cudaFree(device_all_products_buy_options);
     cudaFree(device_best_buy_options);
 
-    cudaEventElapsedTime(&elapsedTime, start, stop);
+    cudaEventElapsedTime(&elapsed_time, start, stop);
+
     printf("\nKERNEL KNAPSACK\n");
     printf("Vector Size: %d\n", num_total_buy_options);
     printf("Number of Threads: %d\n", NUM_THREADS);
     printf("Number of blocks (products): %d\n", NUM_PRODUCTS);
-    printf("Total time %4.6f milseg\n", elapsedTime);
-    printf("Bandwidth %4.3f GB/s\n", (num_total_buy_options * sizeof(int)) / (1000000 * elapsedTime));
+    printf("Total time %4.6f milseg\n", elapsed_time);
+    printf("Bandwidth %4.3f GB/s\n", (num_total_buy_options * sizeof(int)) / (1000000 * elapsed_time));
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-    // ToDo: Ejecutar checkResults();
-
-    return 0;
+    if ( areResultsValid( host_all_products_buy_options, best_buy_options ) )
+    {
+        printf ("TEST PASS\n");
+    }
+    else
+    {
+        printf ("TEST FAIL\n");
+    }
 }
 
-
-// ToDo: Mover aquí la inicialización de all_products_buy_options
-void initTotalBuyOptions(int num_total_buy_options, int *all_products_buy_options)
+void initAllProductsBuyOptions(int *all_products_buy_options)
 {
+    // START Vector all the buy options for the product 1
+
+    // product_1_store_1_buy_option;
+    all_products_buy_options[0] = 11; // store_id
+    all_products_buy_options[1] = 11;  // price
+
+    // product_1_store_2_buy_option;
+    all_products_buy_options[2] = 12; // store_id
+    all_products_buy_options[3] = 12;  // price
+
+    // END Vector all the buy options for the product 1
+
+    // START Vector all the buy options for the product 2
+
+    // product_1_store_1_buy_option;
+    all_products_buy_options[4] = 21; // store_id
+    all_products_buy_options[5] = 21;  // price
+
+    // product_1_store_2_buy_option;
+    all_products_buy_options[6] = 22; // store_id
+    all_products_buy_options[7] = 2;  // price
+
+    // END Vector all the buy options for the product 2
 }
 
-// ToDo: llamar a getBestBuyOptions y comprobar que sea igual que el host_best_buy_options
-int checkResults(int num_total_buy_options, int *all_products_buy_options, int *host_best_buy_options)
+bool areResultsValid(int *all_products_buy_options, int *best_buy_options)
 {
-   return 1;
+   int *tmp_best_buy_options;
+
+   getBestBuyOptions(all_products_buy_options, tmp_best_buy_options);
+
+   for (int product_iteration = 0; product_iteration < NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION; product_iteration += ELEMENTS_PER_BUY_OPTION)
+   {
+       int current_product_position = product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION;
+       int current_product_store_position = current_product_position + STORE_ID_OFFSET;
+       int current_product_price_position = current_product_position + PRICE_OFFSET;
+
+       int best_store = best_buy_options[current_product_store_position];
+       int best_price = best_buy_options[current_product_price_position];
+
+       int tmp_best_store = tmp_best_buy_options[current_product_store_position];
+       int tmp_best_price = tmp_best_buy_options[current_product_price_position];
+
+       if (best_store != tmp_best_store || best_price != tmp_best_price)
+       {
+           return false;
+       }
+   }
+
+   return true;
 }
 
-// ToDo: calcular mejor opción desde el host con la nueva estructura de arrays y no vectores
-void getBestBuyOptions(vector< vector< vector< int > > > all_products_buy_options, vector< vector< int > > *best_buy_options)
+void getBestBuyOptions(int *all_products_buy_options, int *best_buy_options)
 {
-    int num_products = all_products_buy_options.size();
+    for(int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
+    {
+        int current_product_position = product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION;
+        int current_product_store_position = current_product_position + STORE_ID_OFFSET;
+        int current_product_price_position = current_product_position + PRICE_OFFSET;
 
-    for(int current_product_iteration = 0; current_product_iteration < num_products; ++current_product_iteration) {
+        int best_store = all_products_buy_options[current_product_store_position];
+        int best_price = all_products_buy_options[current_product_price_position];
 
-        // Initialize the tmp_best_buy_option with the first buy option
-        vector<int> tmp_best_buy_option = all_products_buy_options[current_product_iteration][0];
-
-        int num_product_buy_options = all_products_buy_options[current_product_iteration].size();
-
-        for(int buy_option_iteration = 1; buy_option_iteration < num_product_buy_options; ++buy_option_iteration) {
-
-            int current_product_price = all_products_buy_options[current_product_iteration][buy_option_iteration][PRICE_POS];
-
-            if (current_product_price < tmp_best_buy_option[PRICE_POS]) {
-                tmp_best_buy_option = all_products_buy_options[current_product_iteration][buy_option_iteration];
+        for(int product_to_compare = ELEMENTS_PER_BUY_OPTION; product_to_compare < NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION; product_to_compare += ELEMENTS_PER_BUY_OPTION)
+        {
+            if (all_products_buy_options[current_product_position + product_to_compare + PRICE_OFFSET] < best_price)
+            {
+               best_store = all_products_buy_options[product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION + product_to_compare + STORE_ID_OFFSET];
+               best_price = all_products_buy_options[product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION + product_to_compare + PRICE_OFFSET];
             }
         }
+        best_buy_options[product_iteration * ELEMENTS_PER_BUY_OPTION + STORE_ID_OFFSET] = best_store;
+        best_buy_options[product_iteration * ELEMENTS_PER_BUY_OPTION + PRICE_OFFSET] = best_price;
+    }
+}
 
-        (*best_buy_options).push_back(tmp_best_buy_option);
+void printBestBuyOptions(int *best_buy_options)
+{
+    cout << endl <<"Best products buy options:" << endl;
+    for (int i = 0; i < NUM_PRODUCTS*2; i+=2)
+    {
+        cout << endl << "\tproduct_id: " << i/2 << endl;
+        cout << "Buy option:" << endl;
+        cout << "\tstore_id: " << best_buy_options[i] << endl;
+        cout << "\tprice: " << best_buy_options[i+1] << endl;
     }
 }
 
