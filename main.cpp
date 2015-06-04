@@ -8,10 +8,10 @@ using namespace std;
 #define STORE_ID_OFFSET 0
 #define PRICE_OFFSET 1
 
-#define NUM_PRODUCTS 2
-#define NUM_BUY_OPTIONS 2
+#define NUM_PRODUCTS 3
+#define NUM_BUY_OPTIONS 5
 
-#define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
+#define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el máximo 1024
 
 void initAllProductsBuyOptions(int *all_products_buy_options);
 
@@ -31,6 +31,7 @@ int main(int argc, char** argv)
     printAllProductsAllBuyOptions(host_all_products_buy_options);
     getBestBuyOptions(host_all_products_buy_options, best_buy_options);
     printBestBuyOptions(best_buy_options);
+    while(true);
     // END DEBUG
 }
 
@@ -38,25 +39,18 @@ void initAllProductsBuyOptions(int *all_products_buy_options)
 {
     for(int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
     {
-        int current_product_position = product_iteration * NUM_BUY_OPTIONS;
+        int current_product_position = product_iteration * NUM_BUY_OPTIONS* ELEMENTS_PER_BUY_OPTION;
 
         for(int buy_option_iteration = 0; buy_option_iteration < NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION; buy_option_iteration += ELEMENTS_PER_BUY_OPTION)
         {
-            int current_product_store_position = current_product_position + buy_option_iteration * ELEMENTS_PER_BUY_OPTION + STORE_ID_OFFSET;
-            int current_product_price_position = current_product_position + buy_option_iteration * ELEMENTS_PER_BUY_OPTION + PRICE_OFFSET;
-
-            cout << "product_iteration: " << product_iteration << endl;
-            cout << "buy_option_iteration: " << buy_option_iteration << endl;
-            cout << "current_product_position: " << current_product_position << endl;
-            cout << "current_product_store_position: " << current_product_store_position << endl;
-            cout << "current_product_price_position: " << current_product_price_position << endl;
-            cout << "NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION: " << NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION << endl << endl;
+            int current_product_store_position = current_product_position + buy_option_iteration + STORE_ID_OFFSET;
+            int current_product_price_position = current_product_position + buy_option_iteration + PRICE_OFFSET;
 
             // Set the current product buy option to the store with the same id as the current iteration in order to do not duplicate buy options.
-            all_products_buy_options[current_product_store_position] = buy_option_iteration;
+            all_products_buy_options[current_product_store_position] = buy_option_iteration/2;
 
-            // Set the price with a random value between 0 and 100.
-            all_products_buy_options[current_product_price_position] = rand() % 100;
+            // Set the price with a random value between 1 and 1000.
+            all_products_buy_options[current_product_price_position] = rand() % 999 + 1;
         }
     }
 }
