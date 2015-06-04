@@ -31,7 +31,6 @@ int main(int argc, char** argv)
     printAllProductsAllBuyOptions(host_all_products_buy_options);
     getBestBuyOptions(host_all_products_buy_options, best_buy_options);
     printBestBuyOptions(best_buy_options);
-    while(true);
     // END DEBUG
 }
 
@@ -39,7 +38,7 @@ void initAllProductsBuyOptions(int *all_products_buy_options)
 {
     for(int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
     {
-        int current_product_position = product_iteration * NUM_BUY_OPTIONS* ELEMENTS_PER_BUY_OPTION;
+        int current_product_position = product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION;
 
         for(int buy_option_iteration = 0; buy_option_iteration < NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION; buy_option_iteration += ELEMENTS_PER_BUY_OPTION)
         {
