@@ -26,33 +26,40 @@ bool areResultsValid(int *all_products_buy_options, int *best_buy_options);
 // comparar entre 2 buy options cuál es la mejor y dejarla en el vector de memoria compartida (temporal)
 // Hacemos __syncthreads() para que no haya colisiones y que todos hayan acabado esta ronda de comparación. Pasar a iteración siguiente.
 // Cuando se haya agotado el bloque, pasar las opciones del vector temporal al vector de salida en caso de ser el thread 0.
-__global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *best_buy_options, unsigned int total_buy_options_size)
+
+__global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *best_buy_options)
 {
-    __shared__ int tmp_best_buy_options[total_buy_options_size];
+    __shared__ float tmp_best_buy_options[1024];
     unsigned int stride;
 
-    // Cada thread carga 1 elemento desde la memoria global
     unsigned int thread_id = threadIdx.x;
-    unsigned int thread_product = blockIdx.x * blockDim.x + threadIdx.x;
-    tmp_best_buy_options[thread_id] = total_buy_options[thread_product];
+    unsigned int thread_product = blockIdx.x * blockDim.x + threadIdx.x * ELEMENTS_PER_BUY_OPTION;
+    tmp_best_buy_options[thread_id + STORE_ID_OFFSET] = total_buy_options[thread_product + STORE_ID_OFFSET];
+    tmp_best_buy_options[thread_id + PRICE_OFFSET] = total_buy_options[thread_product + PRICE_OFFSET];
     __syncthreads();
 
-    // Hacemos la reduccion en la memoria compartida
-    for(stride = 1; stride < blockDim.x; stride *= 4) {
-      if (thread_id % (4 * stride) == 0) {
-          // ToDo: Revisar comparación en función de la nueva definición de la estructura del array.
-          if (tmp_best_buy_options[thread_id + stride][1] < tmp_best_buy_options[thread_id][1]) {
-              tmp_best_buy_options[thread_id] += tmp_best_buy_options[thread_id + stride];
-          }
-      }
-      __syncthreads();
+    for (stride = 1; stride < blockDim.x; stride *= 2)
+    {
+        if (threadid % (2 * stride) == 0)
+        {
+            unsigned int next_buy_option_position = thread_id + stride * ELEMENTS_PER_BUY_OPTION;
+
+            if (tmp_best_buy_options[thread_id + PRICE_OFFSET] > tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET])
+            {
+                tmp_best_buy_options[thread_id + STORE_ID_OFFSET] = tmp_best_buy_options[next_buy_option_position + STORE_ID_OFFSET];
+                tmp_best_buy_options[thread_id + PRICE_OFFSET] = tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET];
+            }
+        }
+        __syncthreads();
     }
 
-    // El thread 0 escribe el resultado de este bloque en la memoria global
-    if (thread_id == 0) {
-        best_buy_options[blockIdx.x] = tmp_best_buy_options[0];
+    if (thread_id == 0)
+    {
+        best_buy_options[blockIdx.x + STORE_ID_OFFSET] = tmp_best_buy_options[STORE_ID_OFFSET];
+        best_buy_options[blockIdx.x + PRICE_OFFSET] = tmp_best_buy_options[PRICE_OFFSET];
     }
 }
+
 
 int main(int argc, char** argv)
 {
@@ -88,7 +95,7 @@ int main(int argc, char** argv)
     cudaEventRecord(start, 0);
 
     // Ejecutar el kernel (número de bloques = número de productos)
-    KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options, total_buy_options_size);
+    KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options);
 
     // Obtener el resultado parcial desde el host
     cudaMemcpy(best_buy_options, device_best_buy_options, best_buy_options_size, cudaMemcpyDeviceToHost);
