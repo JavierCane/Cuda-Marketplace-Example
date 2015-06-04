@@ -4,11 +4,13 @@
 
 using namespace std;
 
+#define IS_DEBUG_ENABLED false
+
 #define ELEMENTS_PER_BUY_OPTION 2
 #define STORE_ID_OFFSET 0
 #define PRICE_OFFSET 1
 
-#define NUM_PRODUCTS 3
+#define NUM_PRODUCTS 1000
 #define NUM_BUY_OPTIONS 6144
 
 #define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
@@ -29,7 +31,7 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
 
 __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *best_buy_options)
 {
-    __shared__ unsigned int tmp_best_buy_options[1024];
+    __shared__ unsigned int tmp_best_buy_options[NUM_THREADS * 2];
     unsigned int stride;
 
     unsigned int thread_id = threadIdx.x;
@@ -40,7 +42,7 @@ __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *be
 
     for (stride = 1; stride < blockDim.x; stride *= 2)
     {
-        if (threadid % (2 * stride) == 0)
+        if (thread_id % (2 * stride) == 0)
         {
             unsigned int next_buy_option_position = thread_id + stride * ELEMENTS_PER_BUY_OPTION;
 
@@ -119,11 +121,13 @@ int main(int argc, char** argv)
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-    // DEBUG
-    printAllProductsAllBuyOptions(host_all_products_buy_options);
+    if (IS_DEBUG_ENABLED)
+    {
+        printAllProductsAllBuyOptions(host_all_products_buy_options);
+    }
+
     getBestBuyOptions(host_all_products_buy_options, best_buy_options);
     printBestBuyOptions(best_buy_options);
-    // END DEBUG
 
     if ( areResultsValid( host_all_products_buy_options, best_buy_options ) )
     {
@@ -137,34 +141,27 @@ int main(int argc, char** argv)
 
 void initAllProductsBuyOptions(unsigned int *all_products_buy_options)
 {
-    // START Vector all the buy options for the product 1
+    for(unsigned int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
+    {
+        unsigned int current_product_position = product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION;
 
-    // product_1_store_1_buy_option;
-    all_products_buy_options[0] = 11; // store_id
-    all_products_buy_options[1] = 11;  // price
+        for(unsigned int buy_option_iteration = 0; buy_option_iteration < NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION; buy_option_iteration += ELEMENTS_PER_BUY_OPTION)
+        {
+            unsigned int current_product_store_position = current_product_position + buy_option_iteration + STORE_ID_OFFSET;
+            unsigned int current_product_price_position = current_product_position + buy_option_iteration + PRICE_OFFSET;
 
-    // product_1_store_2_buy_option;
-    all_products_buy_options[2] = 12; // store_id
-    all_products_buy_options[3] = 12;  // price
+            // Set the current product buy option to the store with the same id as the current iteration in order to do not duplicate buy options.
+            all_products_buy_options[current_product_store_position] = buy_option_iteration/2;
 
-    // END Vector all the buy options for the product 1
-
-    // START Vector all the buy options for the product 2
-
-    // product_1_store_1_buy_option;
-    all_products_buy_options[4] = 21; // store_id
-    all_products_buy_options[5] = 21;  // price
-
-    // product_1_store_2_buy_option;
-    all_products_buy_options[6] = 22; // store_id
-    all_products_buy_options[7] = 2;  // price
-
-    // END Vector all the buy options for the product 2
+            // Set the price with a random value between 1 and 1000.
+            all_products_buy_options[current_product_price_position] = rand() % 999 + 1;
+        }
+    }
 }
 
 bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_buy_options)
 {
-   unsigned int *tmp_best_buy_options;
+   unsigned int *tmp_best_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
 
    getBestBuyOptions(all_products_buy_options, tmp_best_buy_options);
 
