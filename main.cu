@@ -126,7 +126,6 @@ int main(int argc, char** argv)
         printAllProductsAllBuyOptions(host_all_products_buy_options);
     }
 
-    getBestBuyOptions(host_all_products_buy_options, best_buy_options);
     printBestBuyOptions(best_buy_options);
 
     if ( areResultsValid( host_all_products_buy_options, best_buy_options ) )
