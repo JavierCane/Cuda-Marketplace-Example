@@ -4,16 +4,16 @@
 
 using namespace std;
 
-#define IS_DEBUG_ENABLED false
+#define DEBUG_LEVEL 1
 
 #define ELEMENTS_PER_BUY_OPTION 2
 #define STORE_ID_OFFSET 0
 #define PRICE_OFFSET 1
 
-#define NUM_PRODUCTS 1000
-#define NUM_BUY_OPTIONS 6144
+#define NUM_PRODUCTS 8
+#define NUM_BUY_OPTIONS 1024 // Debe ser igual al número de threads.
 
-#define NUM_THREADS 512 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024
+#define NUM_THREADS 1024 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024.
 
 void initAllProductsBuyOptions(unsigned int *all_products_buy_options);
 
@@ -31,25 +31,26 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
 
 __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *best_buy_options)
 {
-    __shared__ unsigned int tmp_best_buy_options[NUM_THREADS * 2];
-    unsigned int stride;
+    __shared__ unsigned int tmp_best_buy_options[NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION];
 
     unsigned int thread_id = threadIdx.x;
-    unsigned int thread_product = blockIdx.x * blockDim.x + threadIdx.x * ELEMENTS_PER_BUY_OPTION;
-    tmp_best_buy_options[thread_id + STORE_ID_OFFSET] = total_buy_options[thread_product + STORE_ID_OFFSET];
-    tmp_best_buy_options[thread_id + PRICE_OFFSET] = total_buy_options[thread_product + PRICE_OFFSET];
+    unsigned int shared_thread_buy_option = thread_id * ELEMENTS_PER_BUY_OPTION;
+    unsigned int global_thread_buy_option = ( blockIdx.x * blockDim.x + thread_id ) * ELEMENTS_PER_BUY_OPTION;
+
+    tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = total_buy_options[global_thread_buy_option + STORE_ID_OFFSET];
+    tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = total_buy_options[global_thread_buy_option + PRICE_OFFSET];
     __syncthreads();
 
-    for (stride = 1; stride < blockDim.x; stride *= 2)
+    for (unsigned int stride = 2; stride < blockDim.x; stride *= 2)
     {
-        if (thread_id % (2 * stride) == 0)
+        if (thread_id % stride == 0)
         {
-            unsigned int next_buy_option_position = thread_id + stride * ELEMENTS_PER_BUY_OPTION;
+            unsigned int next_buy_option_position = shared_thread_buy_option + stride;
 
-            if (tmp_best_buy_options[thread_id + PRICE_OFFSET] > tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET])
+            if (tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] > tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET])
             {
-                tmp_best_buy_options[thread_id + STORE_ID_OFFSET] = tmp_best_buy_options[next_buy_option_position + STORE_ID_OFFSET];
-                tmp_best_buy_options[thread_id + PRICE_OFFSET] = tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET];
+                tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = tmp_best_buy_options[next_buy_option_position + STORE_ID_OFFSET];
+                tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET];
             }
         }
         __syncthreads();
@@ -57,11 +58,10 @@ __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *be
 
     if (thread_id == 0)
     {
-        best_buy_options[blockIdx.x + STORE_ID_OFFSET] = tmp_best_buy_options[STORE_ID_OFFSET];
-        best_buy_options[blockIdx.x + PRICE_OFFSET] = tmp_best_buy_options[PRICE_OFFSET];
+        best_buy_options[blockIdx.x * ELEMENTS_PER_BUY_OPTION + STORE_ID_OFFSET] = tmp_best_buy_options[STORE_ID_OFFSET];
+        best_buy_options[blockIdx.x * ELEMENTS_PER_BUY_OPTION + PRICE_OFFSET] = tmp_best_buy_options[PRICE_OFFSET];
     }
 }
-
 
 int main(int argc, char** argv)
 {
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 
     cudaEventRecord(start, 0);
 
-    // Ejecutar el kernel (número de bloques = número de productos)
+    // Ejecutar el kernel (número de bloques = número de productos). Un bloque por cada producto y todos los threads por cada bloque.
     KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options);
 
     // Obtener el resultado parcial desde el host
@@ -112,6 +112,8 @@ int main(int argc, char** argv)
     cudaEventElapsedTime(&elapsed_time, start, stop);
 
     printf("\nKERNEL KNAPSACK\n");
+    printf("Number of products: %d\n", NUM_PRODUCTS);
+    printf("Number of buy options per product: %d\n", NUM_BUY_OPTIONS);
     printf("Vector Size: %d\n", num_total_buy_options);
     printf("Number of Threads: %d\n", NUM_THREADS);
     printf("Number of blocks (products): %d\n", NUM_PRODUCTS);
@@ -121,12 +123,15 @@ int main(int argc, char** argv)
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
 
-    if (IS_DEBUG_ENABLED)
+    if (DEBUG_LEVEL >= 2)
     {
         printAllProductsAllBuyOptions(host_all_products_buy_options);
     }
 
-    printBestBuyOptions(best_buy_options);
+    if (DEBUG_LEVEL >= 1)
+    {
+        printBestBuyOptions(best_buy_options);
+    }
 
     if ( areResultsValid( host_all_products_buy_options, best_buy_options ) )
     {
@@ -163,6 +168,11 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
    unsigned int *tmp_best_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
 
    getBestBuyOptions(all_products_buy_options, tmp_best_buy_options);
+
+   if (DEBUG_LEVEL >= 1)
+   {
+       printBestBuyOptions(tmp_best_buy_options);
+   }
 
    for (unsigned int product_iteration = 0; product_iteration < NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION; product_iteration += ELEMENTS_PER_BUY_OPTION)
    {
