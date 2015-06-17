@@ -4,13 +4,13 @@
 
 using namespace std;
 
-#define DEBUG_LEVEL 1
+#define DEBUG_LEVEL 0
 
 #define ELEMENTS_PER_BUY_OPTION 2
 #define STORE_ID_OFFSET 0
 #define PRICE_OFFSET 1
 
-#define NUM_PRODUCTS 8
+#define NUM_PRODUCTS 30000
 #define NUM_BUY_OPTIONS 1024 // Debe ser igual al número de threads.
 
 #define NUM_THREADS 1024 // El número mínimo de threads es 32 (por el tamaño de warp) y el maximo 1024.
