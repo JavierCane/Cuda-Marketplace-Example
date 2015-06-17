@@ -7,6 +7,9 @@ LD_FLAGS    = -lcudart -Xlinker -rpath,$(CUDA_HOME)/lib64 -I$(CUDA_HOME)/sdk/CUD
 MARKETPLACE_EXE = Marketplace-Knapsack.exe
 MARKETPLACE_OBJ = Marketplace-Knapsack.o
 
+MARKETPLACE_WARPS_EXE = Marketplace-Knapsack-Warps.exe
+MARKETPLACE_WARPS_OBJ = Marketplace-Knapsack-Warps.o
+
 default: $(MARKETPLACE_EXE)
 
 Marketplace-Knapsack.o: main.cu
@@ -15,7 +18,13 @@ Marketplace-Knapsack.o: main.cu
 $(MARKETPLACE_EXE): $(MARKETPLACE_OBJ)
 	$(NVCC) $(MARKETPLACE_OBJ) -o $(MARKETPLACE_EXE) $(LD_FLAGS)
 
-all:	$(MARKETPLACE_EXE)
+Marketplace-Knapsack-Warps.o: mainWarpsOptimized.cu
+        $(NVCC) -c -o $@ mainWarpsOptimized.cu $(NVCC_FLAGS)
+
+$(MARKETPLACE_WARPS_EXE): $(MARKETPLACE_WARPS_OBJ)
+        $(NVCC) $(MARKETPLACE_WARPS_OBJ) -o $(MARKETPLACE_WARPS_EXE) $(LD_FLAGS)
+
+all:	$(MARKETPLACE_EXE) $(MARKETPLACE_WARPS_EXE)
 
 clean:
 	rm -rf *.o Marketplace-Knapsack*.exe
