@@ -41,11 +41,11 @@ __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *be
     tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = total_buy_options[global_thread_buy_option + PRICE_OFFSET];
     __syncthreads();
 
-    for (unsigned int stride = 2; stride <= blockDim.x; stride *= 2)
+    for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1)
     {
-        if (thread_id % stride == 0)
+        if (thread_id < stride)
         {
-            unsigned int next_buy_option_position = shared_thread_buy_option + stride;
+            unsigned int next_buy_option_position = shared_thread_buy_option + stride * ELEMENTS_PER_BUY_OPTION;
 
             if (tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] > tmp_best_buy_options[next_buy_option_position + PRICE_OFFSET])
             {
