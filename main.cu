@@ -41,7 +41,7 @@ __global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *be
     tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = total_buy_options[global_thread_buy_option + PRICE_OFFSET];
     __syncthreads();
 
-    for (unsigned int stride = 2; stride < blockDim.x; stride *= 2)
+    for (unsigned int stride = 2; stride <= blockDim.x; stride *= 2)
     {
         if (thread_id % stride == 0)
         {
@@ -163,31 +163,36 @@ void initAllProductsBuyOptions(unsigned int *all_products_buy_options)
     }
 }
 
-bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_buy_options)
+bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_buy_options_by_device)
 {
-   unsigned int *tmp_best_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
+   unsigned int *best_buy_options_by_host = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
 
-   getBestBuyOptions(all_products_buy_options, tmp_best_buy_options);
+   getBestBuyOptions(all_products_buy_options, best_buy_options_by_host);
 
    if (DEBUG_LEVEL >= 1)
    {
-       printBestBuyOptions(tmp_best_buy_options);
+       printBestBuyOptions(best_buy_options_by_host);
    }
 
    for (unsigned int product_iteration = 0; product_iteration < NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION; product_iteration += ELEMENTS_PER_BUY_OPTION)
    {
-       unsigned int current_product_position = product_iteration * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION;
-       unsigned int current_product_store_position = current_product_position + STORE_ID_OFFSET;
-       unsigned int current_product_price_position = current_product_position + PRICE_OFFSET;
+       unsigned int current_product_store_position = product_iteration + STORE_ID_OFFSET;
+       unsigned int current_product_price_position = product_iteration + PRICE_OFFSET;
 
-       unsigned int best_store = best_buy_options[current_product_store_position];
-       unsigned int best_price = best_buy_options[current_product_price_position];
+       unsigned int best_store_by_device = best_buy_options_by_device[current_product_store_position];
+       unsigned int best_price_by_device = best_buy_options_by_device[current_product_price_position];
 
-       unsigned int tmp_best_store = tmp_best_buy_options[current_product_store_position];
-       unsigned int tmp_best_price = tmp_best_buy_options[current_product_price_position];
+       unsigned int best_store_by_host = best_buy_options_by_host[current_product_store_position];
+       unsigned int best_price_by_host = best_buy_options_by_host[current_product_price_position];
 
-       if (best_store != tmp_best_store || best_price != tmp_best_price)
+       if (best_store_by_device != best_store_by_host || best_price_by_device != best_price_by_host)
        {
+           printf("FAILED IN product: %d\n", product_iteration);
+           printf("\tbest_store_by_device: %d\n", best_store_by_device);
+           printf("\tbest_store_by_host: %d\n", best_store_by_host);
+           printf("\tbest_price_by_device: %d\n", best_price_by_device);
+           printf("\tbest_price_by_host: %d\n", best_price_by_host);
+
            return false;
        }
    }
