@@ -19,10 +19,10 @@ $(MARKETPLACE_EXE): $(MARKETPLACE_OBJ)
 	$(NVCC) $(MARKETPLACE_OBJ) -o $(MARKETPLACE_EXE) $(LD_FLAGS)
 
 Marketplace-Knapsack-Warps.o: mainWarpsOptimized.cu
-        $(NVCC) -c -o $@ mainWarpsOptimized.cu $(NVCC_FLAGS)
+	$(NVCC) -c -o $@ mainWarpsOptimized.cu $(NVCC_FLAGS)
 
 $(MARKETPLACE_WARPS_EXE): $(MARKETPLACE_WARPS_OBJ)
-        $(NVCC) $(MARKETPLACE_WARPS_OBJ) -o $(MARKETPLACE_WARPS_EXE) $(LD_FLAGS)
+	$(NVCC) $(MARKETPLACE_WARPS_OBJ) -o $(MARKETPLACE_WARPS_EXE) $(LD_FLAGS)
 
 all:	$(MARKETPLACE_EXE) $(MARKETPLACE_WARPS_EXE)
 

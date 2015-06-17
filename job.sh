@@ -9,4 +9,5 @@
 # Cambiar el shell
 #$ -S /bin/bash
 
-./Marketplace-Knapsack.exe
+# ./Marketplace-Knapsack.exe
+./Marketplace-Knapsack-Warps.exe
