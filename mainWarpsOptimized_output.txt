@@ -1,0 +1,9 @@
+KERNEL KNAPSACK
+Number of products: 30000
+Number of buy options per product: 1024
+Vector Size: 30720000
+Number of Threads: 1024
+Number of blocks (products): 30000
+Total time 8.106880 milseg
+Bandwidth 15.157 GB/s
+TEST FAIL
