@@ -187,11 +187,14 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
 
        if (best_store_by_device != best_store_by_host || best_price_by_device != best_price_by_host)
        {
-           printf("FAILED IN product: %d\n", product_iteration);
-           printf("\tbest_store_by_device: %d\n", best_store_by_device);
-           printf("\tbest_store_by_host: %d\n", best_store_by_host);
-           printf("\tbest_price_by_device: %d\n", best_price_by_device);
-           printf("\tbest_price_by_host: %d\n", best_price_by_host);
+           if (DEBUG_LEVEL >= 1)
+           {
+               printf("FAILED IN product: %d\n", product_iteration);
+               printf("\tbest_store_by_device: %d\n", best_store_by_device);
+               printf("\tbest_store_by_host: %d\n", best_store_by_host);
+               printf("\tbest_price_by_device: %d\n", best_price_by_device);
+               printf("\tbest_price_by_host: %d\n", best_price_by_host);
+           }
 
            return false;
        }
