@@ -1,0 +1,2 @@
+SEQUENTIAL
+Elapsed time 38.636768 milseg 

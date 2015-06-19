@@ -68,6 +68,7 @@ int main(int argc, char** argv)
     // Buy options in host and device
     unsigned int *host_all_products_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
     unsigned int *best_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
+    unsigned int *seq_best_buy_options = (unsigned int *) malloc( NUM_PRODUCTS * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int) );
     unsigned int *device_all_products_buy_options;
     unsigned int *device_best_buy_options;
 
@@ -81,11 +82,16 @@ int main(int argc, char** argv)
     float elapsed_time;
     cudaEvent_t start;
     cudaEvent_t stop;
+    float seq_elapsed_time;
+    cudaEvent_t seq_start;
+    cudaEvent_t seq_stop;
 
     initAllProductsBuyOptions(host_all_products_buy_options);
 
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
+    cudaEventCreate(&seq_start);
+    cudaEventCreate(&seq_stop);
 
     // Obtener Memoria en el device
     cudaMalloc( (unsigned int**) &device_all_products_buy_options, total_buy_options_size );
@@ -140,6 +146,21 @@ int main(int argc, char** argv)
     {
         printf ("TEST FAIL\n");
     }
+
+    cudaEventRecord(seq_start, 0);
+
+    getBestBuyOptions(host_all_products_buy_options, seq_best_buy_options);
+
+    cudaEventRecord(seq_stop, 0);
+    cudaEventSynchronize(seq_stop);
+
+    cudaEventElapsedTime(&seq_elapsed_time, seq_start, seq_stop);
+
+    printf("\nSEQUENCIAL\n");
+    printf("Elapsed time %4.6f milseg\n", seq_elapsed_time);
+
+    cudaEventDestroy(seq_start);
+    cudaEventDestroy(seq_stop);
 }
 
 void initAllProductsBuyOptions(unsigned int *all_products_buy_options)
