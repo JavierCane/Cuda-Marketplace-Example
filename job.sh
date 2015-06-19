@@ -9,6 +9,6 @@
 # Cambiar el shell
 #$ -S /bin/bash
 
-./Marketplace-Knapsack.exe
+#./Marketplace-Knapsack.exe
 #./Marketplace-Knapsack-Warps.exe
-#./Marketplace-Knapsack-Threads.exe
+./Marketplace-Knapsack-Threads.exe
