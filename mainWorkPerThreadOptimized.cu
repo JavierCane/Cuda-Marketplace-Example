@@ -25,12 +25,6 @@ void printBestBuyOptions(unsigned int *best_buy_options);
 
 bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_buy_options);
 
-// ToDo: Cada thread ejecuta el kernel.
-// Identificar el thread en el que estamos, en base a esto, calculamos si nos toca trabajar y, en caso afirmativo
-// comparar entre 2 buy options cuál es la mejor y dejarla en el vector de memoria compartida (temporal)
-// Hacemos __syncthreads() para que no haya colisiones y que todos hayan acabado esta ronda de comparación. Pasar a iteración siguiente.
-// Cuando se haya agotado el bloque, pasar las opciones del vector temporal al vector de salida en caso de ser el thread 0.
-
 __global__ void KernelMarketplace(unsigned int *total_buy_options, unsigned int *best_buy_options)
 {
     __shared__ unsigned int tmp_best_buy_options[NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION / NUM_BUY_OPTIONS_PER_THREAD];
