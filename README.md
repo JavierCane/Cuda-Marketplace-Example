@@ -4,36 +4,31 @@ CUDA Marketplace Knapsack
 Datos del proyecto
 ------------------
 
-Objetivo
-: Iniciarnos en la programación con CUDA
-
-Descripción del proyecto
-: En base a una serie de productos con múltiples opciones de compra, determinar cuál es la mejor opción de compra para cada uno de estos productos.
+- Objetivo:
+  - Iniciarnos en la programación con CUDA
+- Descripción del proyecto:
+  - En base a una serie de productos con múltiples opciones de compra, determinar cuál es la mejor opción de compra para cada uno de estos productos.
 Para determinar la mejor oferta únicamente se tiene en cuenta el precio de éstas.
-
-Autores
-: [Adrià Jorquera Codina](https://github.com/adriajorquera "GitHub Adrià")
-: [Javier Ferrer González](https://github.com/JavierCane "GitHub Javier")
-
-Asignatura
-: [Tarjetas Gráficas y Aceleradores (TGA)](http://www.fib.upc.edu/es/estudiar-enginyeria-informatica/assignatures/TGA.html)
-
-Fecha de entrega
-: 23 de junio de 2015
-
-Curso
-: 2014-2015
-
-Facultad
-: [Facultad de Informática de Barcelona (FIB)](http://www.fib.upc.edu/)
-
-Universidad
-: [Universidad Politecnica de Cataluña (UPC)](http://www.upc.edu/)
+- Autores:
+  - [Adrià Jorquera Codina](https://github.com/adriajorquera "GitHub Adrià")
+  - [Javier Ferrer González](https://github.com/JavierCane "GitHub Javier")
+- Asignatura:
+  - [Tarjetas Gráficas y Aceleradores (TGA)](http://www.fib.upc.edu/es/estudiar-enginyeria-informatica/assignatures/TGA.html)
+- Fecha de entrega:
+  - 23 de junio de 2015
+- Curso:
+  - 2014-2015
+- Facultad:
+  - [Facultad de Informática de Barcelona (FIB)](http://www.fib.upc.edu/)
+- Universidad:
+  - [Universidad Politecnica de Cataluña (UPC)](http://www.upc.edu/)
 
 ----------
 
 Introducción
 -------------
+
+### Dominio
 
 ### Estructuras de datos
 
@@ -57,9 +52,6 @@ Primera versión del kernel en CUDA
 ### Implementación
 ```
     for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1)
-    {
-        if (thread_id < stride)
-        {    for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1)
     {
         if (thread_id < stride)
         {
@@ -104,6 +96,3 @@ Datos de la prueba:
 | Secuencial en C++		|-----------|-------------|
 | Kernel CUDA			| 12.416704	| 19.793 GB/s |
 | Warps optimizados		| 8.137472	| 30.201 GB/s |
-
-
-
