@@ -118,7 +118,7 @@ int main(int argc, char** argv)
     printf("Number of Threads: %d\n", NUM_THREADS);
     printf("Number of blocks (products): %d\n", NUM_PRODUCTS);
     printf("Total time %4.6f milseg\n", elapsed_time);
-    printf("Bandwidth %4.3f GB/s\n", (num_total_buy_options * sizeof(unsigned int)) / (1000000 * elapsed_time));
+    printf("Bandwidth %4.3f GB/s\n", (num_total_buy_options * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int)) / (1000000 * elapsed_time));
 
     cudaEventDestroy(start);
     cudaEventDestroy(stop);
@@ -158,7 +158,7 @@ void initAllProductsBuyOptions(unsigned int *all_products_buy_options)
             all_products_buy_options[current_product_store_position] = buy_option_iteration/2;
 
             // Set the price with a random value between 1 and 1000.
-            all_products_buy_options[current_product_price_position] = rand() % 999 + 1;
+            all_products_buy_options[current_product_price_position] = rand() % 99999 + 1;
         }
     }
 }
@@ -185,7 +185,7 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
        unsigned int best_store_by_host = best_buy_options_by_host[current_product_store_position];
        unsigned int best_price_by_host = best_buy_options_by_host[current_product_price_position];
 
-       if (best_store_by_device != best_store_by_host || best_price_by_device != best_price_by_host)
+       if (best_price_by_device != best_price_by_host)
        {
            if (DEBUG_LEVEL >= 1)
            {
