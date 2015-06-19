@@ -29,7 +29,7 @@ bool areResultsValid(unsigned int *all_products_buy_options, unsigned int *best_
 // Hacemos __syncthreads() para que no haya colisiones y que todos hayan acabado esta ronda de comparación. Pasar a iteración siguiente.
 // Cuando se haya agotado el bloque, pasar las opciones del vector temporal al vector de salida en caso de ser el thread 0.
 
-__global__ void KernelKnapsack(unsigned int *total_buy_options, unsigned int *best_buy_options)
+__global__ void KernelMarketplace(unsigned int *total_buy_options, unsigned int *best_buy_options)
 {
     __shared__ unsigned int tmp_best_buy_options[NUM_BUY_OPTIONS * ELEMENTS_PER_BUY_OPTION];
 
@@ -97,7 +97,7 @@ int main(int argc, char** argv)
     cudaEventRecord(start, 0);
 
     // Ejecutar el kernel (número de bloques = número de productos). Un bloque por cada producto y todos los threads por cada bloque.
-    KernelKnapsack<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options);
+    KernelMarketplace<<<NUM_PRODUCTS, NUM_THREADS>>>(device_all_products_buy_options, device_best_buy_options);
 
     // Obtener el resultado parcial desde el host
     cudaMemcpy(best_buy_options, device_best_buy_options, best_buy_options_size, cudaMemcpyDeviceToHost);
@@ -111,12 +111,11 @@ int main(int argc, char** argv)
 
     cudaEventElapsedTime(&elapsed_time, start, stop);
 
-    printf("\nKERNEL KNAPSACK\n");
-    printf("Number of products: %d\n", NUM_PRODUCTS);
-    printf("Number of buy options per product: %d\n", NUM_BUY_OPTIONS);
-    printf("Vector Size: %d\n", num_total_buy_options);
-    printf("Number of Threads: %d\n", NUM_THREADS);
+    printf("\nKERNEL MARKETPLACE\n");
+    printf("Number buy options per product: %d\n", NUM_BUY_OPTIONS);
     printf("Number of blocks (products): %d\n", NUM_PRODUCTS);
+    printf("Number of Threads: %d\n", NUM_THREADS);
+    printf("Vector Size: %d\n", num_total_buy_options);
     printf("Total time %4.6f milseg\n", elapsed_time);
     printf("Bandwidth %4.3f GB/s\n", (num_total_buy_options * ELEMENTS_PER_BUY_OPTION * sizeof(unsigned int)) / (1000000 * elapsed_time));
 
