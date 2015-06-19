@@ -1,4 +1,4 @@
-CUDA Marketplace Knapsack
+CUDA Marketplace
 ===================
 
 Datos del proyecto
@@ -8,7 +8,7 @@ Datos del proyecto
   - Iniciarnos en la programación con CUDA
 - Descripción del proyecto:
   - En base a una serie de productos con múltiples opciones de compra, determinar cuál es la mejor opción de compra para cada uno de estos productos.
-Para determinar la mejor oferta únicamente se tiene en cuenta el precio de éstas.
+El criterio de "mejor opción de compra" únicamente se basa en el precio de ésta.
 - Autores:
   - [Adrià Jorquera Codina](https://github.com/adriajorquera "GitHub Adrià")
   - [Javier Ferrer González](https://github.com/JavierCane "GitHub Javier")
@@ -29,13 +29,34 @@ Introducción
 -------------
 
 ### Dominio
+Para este ejercicio hemos supuesto que somos los gestores de un portal de compras on-line que recientemente ha recibido un incremento notable en el volumen de peticiones a sus servidores. Debido a este incremento, el rendimiento de la plataforma se ha visto afectado y debemos optimizar algunas partes de la aplicación para poder seguir ofreciendo una navegación fluida por nuestra web.
+
+Nuestro portal de ventas es de tipo Marketplace. Con lo cual, integramos los catálogos que recibimos por parte de las diversas tiendas afiliadas. Cabe destacar el hecho de que tenemos un gran porcentaje de solapamiento entre los catálogos de distintas tiendas, produciendo así que un mismo producto tenga múltiples opciones de compra, cada una con su precio asociado.
+
+El usuario final es el que selecciona con qué afiliado quiere comprar cada uno de los productos. Es así cómo se configura su carrito de compra para poder realizar un pedido. Dado que el usuario no tiene por qué ser consciente de cómo funciona un Marketplace, puede darse el caso de que tenga productos en su carrito de compra con afiliados que no tienen la opción de compra más barata.
+
+Debido a este tipo de escenarios, tenemos un proceso en nuestro sistema que se encarga de asegurarle al usuario que en todo momento tiene el mejor carrito de compra posible y, si no es así, le damos la opción de mejorarlo aplicando las opciones de compra más baratas.
+
+Nos hemos dado cuenta de que, uno de los puntos que consume más recursos de los servidores, es el propio cálculo de esta mejor opción de compra teniendo en cuenta todos los productos del carrito. Con lo cuál, nos hemos decidido a migrar este pequeño algoritmo de C++ a CUDA con tal de comprobar si ganaríamos en tiempo y podríamos así mantener una carga menor en los servidores.
+
+Por darle un poco de volumen y poder tener así un estudio de tiempos que no sean despreciables, hemos asumido que el número de productos que debemos manejar se mueven por el orden de 30.000 productos. Por otra parte, debido al solapamiento de catálogo que comentábamos antes, cada producto tiene alrededor de 1.000 ofertas.
+
+Nota: Esta idea está inspirada en una [funcionalidad real (Smart Cart) llevada a cabo por el marketplace Uvinum](http://blog.uvinum.es/te-ayudamos-uvinum-ahorrar-tus-comprasr-atento-nuestros-consejos-2372700 "Descripción del Smart Cart de Uvinum"). Que a pesar de tener un contexto donde el rendimiento no es tan crítico, ni tendría sentido llevar a cabo esta optimización en CUDA, sí que nos pareció interesante intentar adoptar un matiz mínimamente realista para la práctica.
 
 ### Estructuras de datos
 
 Solución secuencial en C++
 -------------
 
-### Implementación
+### Datos
+- Implementación:
+  - [main.cpp](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main.cpp)
+- Salida:
+  - [main_cpp_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cpp_output.txt)
+
+### Descripción
+
+### Detalle de implementación
 ```
     for(int product_iteration = 0; product_iteration < NUM_PRODUCTS; ++product_iteration)
     {
@@ -49,15 +70,27 @@ Solución secuencial en C++
 Primera versión del kernel en CUDA
 -------------
 
-### Implementación
+### Datos
+- Implementación:
+  - [main.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main.cu)
+- Salida:
+  - [main_cu_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cu_output.txt)
+
+### Descripción
+
+### Detalle de implementación
 ```
-    for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1)
+    tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = total_buy_options[global_thread_buy_option + STORE_ID_OFFSET];
+    tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = total_buy_options[global_thread_buy_option + PRICE_OFFSET];
+    __syncthreads();
+    
+    for (unsigned int stride = 2; stride <= blockDim.x; stride *= 2)
     {
-        if (thread_id < stride)
+        if (thread_id % stride == 0)
         {
-            unsigned int next_buy_option_position = shared_thread_buy_option + stride * ELEMENTS_PER_BUY_OPTION;
+            unsigned int next_buy_option_position = shared_thread_buy_option + stride;
             
-	        // Si la opción de venta siguiente (teniendo en cuenta stride) es mejor que la actual, la guardamos en el array de memoria compartida.
+	        // Si la opción de compra siguiente (teniendo en cuenta el stride) es mejor que la actual, la guardamos en el array de memoria compartida.
         }
         __syncthreads();
     }
@@ -66,8 +99,20 @@ Primera versión del kernel en CUDA
 Kernel CUDA con warps optimizados
 -------------
 
-### Implementación
+### Datos
+- Implementación:
+  - [mainWarpsOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized.cu)
+- Salida:
+  - [mainWarpsOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized_output.txt)
+
+### Descripción
+
+### Detalle de implementación
 ```
+    tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = total_buy_options[global_thread_buy_option + STORE_ID_OFFSET];
+    tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = total_buy_options[global_thread_buy_option + PRICE_OFFSET];
+    __syncthreads();
+    
     for (unsigned int stride = blockDim.x / 2; stride > 0; stride >>= 1)
     {
         if (thread_id < stride)
@@ -78,6 +123,36 @@ Kernel CUDA con warps optimizados
         }
         __syncthreads();
     }
+```
+
+Kernel CUDA con más trabajo por thread
+-------------
+
+### Datos
+- Implementación:
+  - [mainWorkPerThreadOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWorkPerThreadOptimized.cu)
+- Salida:
+  - [mainWorkPerThreadOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWorkPerThreadOptimized_output.txt)
+
+### Descripción
+
+### Detalle de implementación
+```
+    if (first_price < second_price)
+    {
+        tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = first_store_id;
+        tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = first_price;
+    }
+
+    else
+    {
+        tmp_best_buy_options[shared_thread_buy_option + STORE_ID_OFFSET] = second_store_id;
+        tmp_best_buy_options[shared_thread_buy_option + PRICE_OFFSET] = second_price;
+    }
+
+    __syncthreads();
+    
+	// Bucle idéntico a la optimización anterior
 ```
 
 Conclusiones
@@ -96,3 +171,4 @@ Datos de la prueba:
 | Secuencial en C++		|-----------|-------------|
 | Kernel CUDA			| 12.416704	| 19.793 GB/s |
 | Warps optimizados		| 8.137472	| 30.201 GB/s |
+| Más trabajo por thread| 4.697472	| 52.318 GB/s |
