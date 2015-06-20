@@ -106,6 +106,8 @@ Kernel CUDA con warps optimizados
   - [mainWarpsOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized_output.txt)
 
 ### Descripción
+En esta optimización, organizamos el trabajo que hace cada thread para tener un mejor acceso de memoria y un uso de WARPS más eficiente. Anteriormente dentro de un bloque los threads trabajaban primero los pares, luego los múltiplos de cuatro, seguido de los múltiplos de 8 y así sucesivamente. Como los threads se lanzan en WARPS, grupos de 32, se provocaba que los WARPS se vaciaran enseguida y se lanzaban 32 threads de los cuales pocos hacian trabajo útil.
+Para solucionar el problema, se organiza que threads trabajan y sobre que elementos. La manera de conseguirlo es haciendo que la carga de trabajo recaiga sobre threads consecutivos. Así se logra que los WARPS cuando se lanzan todos sus threads tienen una cantidad de trabajo parecida.
 
 ### Detalle de implementación
 ```
