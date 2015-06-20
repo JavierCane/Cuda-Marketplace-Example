@@ -107,6 +107,7 @@ Kernel CUDA con warps optimizados
 
 ### Descripción
 En esta optimización, organizamos el trabajo que hace cada thread para tener un mejor acceso de memoria y un uso de WARPS más eficiente. Anteriormente dentro de un bloque los threads trabajaban primero los pares, luego los múltiplos de cuatro, seguido de los múltiplos de 8 y así sucesivamente. Como los threads se lanzan en WARPS, grupos de 32, se provocaba que los WARPS se vaciaran enseguida y se lanzaban 32 threads de los cuales pocos hacian trabajo útil.
+
 Para solucionar el problema, se organiza que threads trabajan y sobre que elementos. La manera de conseguirlo es haciendo que la carga de trabajo recaiga sobre threads consecutivos. Así se logra que los WARPS cuando se lanzan todos sus threads tienen una cantidad de trabajo parecida.
 
 ### Detalle de implementación
@@ -137,6 +138,11 @@ Kernel CUDA con más trabajo por thread
   - [mainWorkPerThreadOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWorkPerThreadOptimized_output.txt)
 
 ### Descripción
+Tal como está organizado el programa, en la primera iteración del bucle de la reducción la mitad de los threads ya no hacen nada. Los threads con identificador mayor a BlockDim/2 lo único que hacen es traer un elemento desde memoria y ya está. Para aprovechar el paralelismo al màximo, se puede reducir el trabajo de los primeros threads para darselo a los otros.
+
+La optimización realizada en esta situación se encuentra en hacer una comparación en cada thread antes de pasar al bucle de reducción. De esta manera, los threads traen dos elementos desde memoria y los comparan. Sólo el elemento con menor precio se guarda en la memoria compartida para iniciar la reducción.
+
+Nota: Para hacer que el kernel funcione, se ha de reducir el número de threads por bloque a la mitad pues cada thread ahora trabaja con dos elementos.
 
 ### Detalle de implementación
 ```
