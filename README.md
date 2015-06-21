@@ -39,11 +39,14 @@ Debido a este tipo de escenarios, tenemos un proceso en nuestro sistema que se e
 
 Nos hemos dado cuenta de que, uno de los puntos que consume más recursos de los servidores, es el propio cálculo de esta mejor opción de compra teniendo en cuenta todos los productos del carrito. Con lo cuál, nos hemos decidido a migrar este pequeño algoritmo de C++ a CUDA con tal de comprobar si ganaríamos en tiempo y podríamos así mantener una carga menor en los servidores.
 
-Por darle un poco de volumen y poder tener así un estudio de tiempos que no sean despreciables, hemos asumido que el número de productos que debemos manejar se mueven por el orden de 30.000 productos. Por otra parte, debido al solapamiento de catálogo que comentábamos antes, cada producto tiene alrededor de 1.000 ofertas.
+Por darle un poco de volumen y poder tener así un estudio de tiempos que no sean despreciables, hemos asumido que el número de productos que debemos manejar se mueven por el orden de 30.000 productos. Por otra parte, debido al solapamiento de catálogo que comentábamos antes, cada producto tiene alrededor de 1.000 opciones de compra.
 
 Nota: Esta idea está inspirada en una [funcionalidad real (Smart Cart) llevada a cabo por el marketplace Uvinum](http://blog.uvinum.es/te-ayudamos-uvinum-ahorrar-tus-comprasr-atento-nuestros-consejos-2372700 "Descripción del Smart Cart de Uvinum"). Que a pesar de tener un contexto donde el rendimiento no es tan crítico, ni tendría sentido llevar a cabo esta optimización en CUDA, sí que nos pareció interesante intentar adoptar un matiz mínimamente realista para la práctica.
 
 ### Estructuras de datos
+El input del programa se basa en el array inicializado en la función `initAllProductsBuyOptions`. Este array no es multidimensional. Es decir, todas las opciones de compra de todos los productos están colocadas una detrás de otra. Primero las opciones de compra del primer producto, luego las del segundo, y así hasta llegar a las opciones de compra de cada producto.
+
+Cada opción de compra se basa en 2 enteros colocados también de forma consecutiva. Primeramente nos encontramos el identificador de la tienda afiliada que vende ese producto (accesible mediante la suma del `STORE_ID_OFFSET`) y después tenemos el precio del producto (accesible mediante la suma del `PRICE_OFFSET`) que, para el ejercicio hemos hecho que se generen de forma aleatoria.
 
 Solución secuencial en C++
 -------------
@@ -55,6 +58,11 @@ Solución secuencial en C++
   - [main_cpp_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cpp_output.txt)
 
 ### Descripción
+El algoritmo al que nos enfrentamos es muy simple. No hemos querido cumentar su complejidad por intentar centrarnos en la parte correspondiente al paralelismo mediante CUDA y no al dominio en sí mismo.
+
+Lo único que deberemos hacer será iterar por cada una de las posibles opciones de compra de cada uno de los productos y, en cada iteración, comprobar si la opción de compra es mejor que la guardada en un array de resultados temporal.
+
+En el detalle de implementación que sigue se pueden ver los dos bucles que se usan para recorrer el array de productos. Uno exterior con la variable `product_iteration` como índice y que itera por cada producto, y uno interior con `product_to_compare` por índice que itera por todas las opciones de compra del producto actual.
 
 ### Detalle de implementación
 ```
@@ -77,6 +85,11 @@ Primera versión del kernel en CUDA
   - [main_cu_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cu_output.txt)
 
 ### Descripción
+En esta primera versión de la implementación del algoritmo en CUDA simplemente introducimos el concepto de paralelismo sin preocuparnos de la eficiencia.
+
+Todo gira en torno al hecho de ejecutar una comparación por cada thread. Es decir, cada thread es responsable de saber si su opción de compra es mejor que la siguiente. Para el cálculo de la siguiente opción de compra se tiene en cuenta un stride que irá iterando en potencias de 2.
+
+En el siguiente detalle de implementación se puede ver la esencia del kernel:
 
 ### Detalle de implementación
 ```
@@ -106,9 +119,9 @@ Kernel CUDA con warps optimizados
   - [mainWarpsOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized_output.txt)
 
 ### Descripción
-En esta optimización, organizamos el trabajo que hace cada thread para tener un mejor acceso de memoria y un uso de WARPS más eficiente. Anteriormente dentro de un bloque los threads trabajaban primero los pares, luego los múltiplos de cuatro, seguido de los múltiplos de 8 y así sucesivamente. Como los threads se lanzan en WARPS, grupos de 32, se provocaba que los WARPS se vaciaran enseguida y se lanzaban 32 threads de los cuales pocos hacian trabajo útil.
+En esta optimización, organizamos el trabajo que hace cada thread para tener un mejor acceso de memoria y un uso de Warps más eficiente. Anteriormente dentro de un bloque los threads trabajaban primero los pares, luego los múltiplos de cuatro, seguido de los múltiplos de 8 y así sucesivamente. Como los threads se lanzan en Warps, grupos de 32, se provocaba que los Warps se vaciaran enseguida y se lanzaban 32 threads de los cuales pocos hacian trabajo útil.
 
-Para solucionar el problema, se organiza que threads trabajan y sobre que elementos. La manera de conseguirlo es haciendo que la carga de trabajo recaiga sobre threads consecutivos. Así se logra que los WARPS cuando se lanzan todos sus threads tienen una cantidad de trabajo parecida.
+Para solucionar el problema, se organiza qué threads trabajan y sobre qué elementos. La manera de conseguirlo es haciendo que la carga de trabajo recaiga sobre threads consecutivos. Así se logra una mejor distribución del trabajo a realizar por los threads de cada Warp.
 
 ### Detalle de implementación
 ```
@@ -176,7 +189,7 @@ Datos de la prueba:
 
 | Implementación     	| Tiempo total (en milisegs.) | Ancho de banda (en GB/s) |
 |:----------------------|----------:|------------:|
-| Secuencial en C++		|-----------|-------------|
+| Secuencial en C++		| 38.636768 |-------------|
 | Kernel CUDA			| 12.416704	| 19.793 GB/s |
 | Warps optimizados		| 8.137472	| 30.201 GB/s |
 | Más trabajo por thread| 4.697472	| 52.318 GB/s |
