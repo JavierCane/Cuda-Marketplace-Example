@@ -48,6 +48,9 @@ El input del programa se basa en el array inicializado en la función `initAllPr
 
 Cada opción de compra se basa en 2 enteros colocados también de forma consecutiva. Primeramente nos encontramos el identificador de la tienda afiliada que vende ese producto (accesible mediante la suma del `STORE_ID_OFFSET`) y después tenemos el precio del producto (accesible mediante la suma del `PRICE_OFFSET`) que, para el ejercicio hemos hecho que se generen de forma aleatoria.
 
+En la siguiente ilustración se puede apreciar de forma más gráfica:
+![Array con todas las opciones de compra de todos los productos](assets/all_products_buy_options.png "Array con todas las opciones de compra de todos los productos")
+
 Solución secuencial en C++
 -------------
 
