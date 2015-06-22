@@ -9,6 +9,8 @@ Datos del proyecto
 - Descripción del proyecto:
   - En base a una serie de productos con múltiples opciones de compra, determinar cuál es la mejor opción de compra para cada uno de estos productos.
 El criterio de "mejor opción de compra" únicamente se basa en el precio de ésta.
+- Repositorio:
+	- https://github.com/JavierCane/Cuda-Marketplace-Example
 - Autores:
   - [Adrià Jorquera Codina](https://github.com/adriajorquera "GitHub Adrià")
   - [Javier Ferrer González](https://github.com/JavierCane "GitHub Javier")
@@ -56,9 +58,9 @@ Solución secuencial en C++
 
 ### Datos
 - Implementación:
-  - [main.cpp](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main.cpp)
+  - [main.cpp](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/main.cpp)
 - Salida:
-  - [main_cpp_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cpp_output.txt)
+  - [main_cpp_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/main_cpp_output.txt)
 
 ### Descripción
 El algoritmo al que nos enfrentamos es muy simple. No hemos querido cumentar su complejidad por intentar centrarnos en la parte correspondiente al paralelismo mediante CUDA y no al dominio en sí mismo.
@@ -83,9 +85,9 @@ Primera versión del kernel en CUDA
 
 ### Datos
 - Implementación:
-  - [main.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main.cu)
+  - [main.cu](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/main.cu)
 - Salida:
-  - [main_cu_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/main_cu_output.txt)
+  - [main_cu_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/main_cu_output.txt)
 
 ### Descripción
 En esta primera versión de la implementación del algoritmo en CUDA simplemente introducimos el concepto de paralelismo sin preocuparnos de la eficiencia.
@@ -117,9 +119,9 @@ Kernel CUDA con warps optimizados
 
 ### Datos
 - Implementación:
-  - [mainWarpsOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized.cu)
+  - [mainWarpsOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/mainWarpsOptimized.cu)
 - Salida:
-  - [mainWarpsOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWarpsOptimized_output.txt)
+  - [mainWarpsOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/mainWarpsOptimized_output.txt)
 
 ### Descripción
 En esta optimización, organizamos el trabajo que hace cada thread para tener un mejor acceso de memoria y un uso de Warps más eficiente. Anteriormente dentro de un bloque los threads trabajaban primero los pares, luego los múltiplos de cuatro, seguido de los múltiplos de 8 y así sucesivamente. Como los threads se lanzan en Warps, grupos de 32, se provocaba que los Warps se vaciaran enseguida y se lanzaban 32 threads de los cuales pocos hacian trabajo útil.
@@ -149,9 +151,9 @@ Kernel CUDA con más trabajo por thread
 
 ### Datos
 - Implementación:
-  - [mainWorkPerThreadOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWorkPerThreadOptimized.cu)
+  - [mainWorkPerThreadOptimized.cu](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/mainWorkPerThreadOptimized.cu)
 - Salida:
-  - [mainWorkPerThreadOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Knapsack/blob/master/mainWorkPerThreadOptimized_output.txt)
+  - [mainWorkPerThreadOptimized_output.txt](https://github.com/JavierCane/Cuda-Marketplace-Example/blob/master/mainWorkPerThreadOptimized_output.txt)
 
 ### Descripción
 Tal como está organizado el programa, en la primera iteración del bucle de la reducción la mitad de los threads ya no hacen nada. Los threads con identificador mayor a BlockDim/2 lo único que hacen es traer un elemento desde memoria y ya está. Para aprovechar el paralelismo al màximo, se puede reducir el trabajo de los primeros threads para darselo a los otros.
